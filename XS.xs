@@ -85,7 +85,9 @@ static SV* call_sv_with_args (SV* code, SV* self, AV* args, I32 flags, SV* optio
 }
 
 static bool name_is_private (const char* name) {
-    return (*name == '_' || *name == '.') ? 1 : 0;
+    if ((*name == '_' || *name == '.') // yuck - hard coded
+         && SvTRUE(get_sv("CGI::Ex::Template::QR_PRIVATE", FALSE))) return 1;
+    return 0;
 }
 
 static void _play_foreach (SV* self, SV* ref, SV* node, SV* out_ref) {
@@ -510,24 +512,37 @@ play_expr (_self, _var, ...)
                     XPUSHs(newRV_inc(ref));
                     XSRETURN(1);
                 }
-            } else if (sv_eq(name, sv_2mortal(newSVpv("template", 0)))
-                       && (svp = hv_fetch(self, "_template", 9, FALSE))) {
-                SvGETMAGIC(*svp);
-                ref = *svp;
-            } else if (sv_eq(name, sv_2mortal(newSVpv("component", 0)))
-                       && (svp = hv_fetch(self, "_component", 10, FALSE))) {
-                SvGETMAGIC(*svp);
-                ref = *svp;
-            } else {
-                SV* table = get_sv("CGI::Ex::Template::VOBJS", FALSE);
-                if (SvROK(table)
-                    && SvTYPE(SvRV(table)) == SVt_PVHV
-                    && (svp = hv_fetch((HV*)SvRV(table), name_c, name_len, FALSE))
-                    && SvTRUE(*svp)) {
+            }
+            if (! svp || ! sv_defined(ref)) {
+                if (sv_eq(name, sv_2mortal(newSVpv("template", 0)))
+                           && (svp = hv_fetch(self, "_template", 9, FALSE))) {
+                    SvGETMAGIC(*svp);
+                    ref = *svp;
+                } else if (sv_eq(name, sv_2mortal(newSVpv("component", 0)))
+                           && (svp = hv_fetch(self, "_component", 10, FALSE))) {
                     SvGETMAGIC(*svp);
                     ref = *svp;
                 } else {
-                    ref = &PL_sv_undef;
+                    SV* table = get_sv("CGI::Ex::Template::VOBJS", FALSE);
+                    if (SvROK(table)
+                        && SvTYPE(SvRV(table)) == SVt_PVHV
+                        && (svp = hv_fetch((HV*)SvRV(table), name_c, name_len, FALSE))
+                        && SvTRUE(*svp)) {
+                        SvGETMAGIC(*svp);
+                        ref = *svp;
+                    } else {
+                        svp = hv_fetch(self, "VMETHOD_FUNCTIONS", 17, FALSE);
+                        if (svp) SvGETMAGIC(*svp);
+                        SV* table = get_sv("CGI::Ex::Template::SCALAR_OPS", TRUE);
+                        if ((! sv_defined(*svp) || SvTRUE(*svp))
+                            && SvROK(table)
+                            && (svp = hv_fetch((HV*)SvRV(table), name_c, name_len, FALSE))) {
+                            SvGETMAGIC(*svp);
+                            ref = *svp;
+                        } else {
+                            ref = &PL_sv_undef;
+                        }
+                    }
                 }
             }
         }
@@ -1041,13 +1056,11 @@ execute_tree (_self, _tree, _out_ref)
                 XPUSHs(_node);
                 XPUSHs(_out_ref);
                 PUTBACK;
-                n = call_sv(*svp, G_SCALAR);
+                n = call_sv(*svp, G_VOID);
                 SPAGAIN;
                 if (n >= 1) {
-                    add_str = POPs;
                     I32 j;
-                    for (j = 1; j < n; j++) POPs;
-                    if (sv_defined(add_str)) sv_catsv(out_ref, add_str);
+                    for (j = 0; j < n; j++) POPs;
                 }
                 PUTBACK;
             //}

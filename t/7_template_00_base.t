@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-7_template_00_base.t - Test the basic language functionality of CGI::Ex::Template - including many edge cases
+7_template_00_base.t - Test the basic language functionality of CGI::Ex::Template::XS - including many edge cases
 
 =cut
 
@@ -14,7 +14,7 @@ BEGIN {
 };
 
 use strict;
-use Test::More tests => ! $is_tt ? 806 : 599;
+use Test::More tests => ! $is_tt ? 853 : 607;
 use Data::Dumper qw(Dumper);
 use constant test_taint => 0 && eval { require Taint::Runtime };
 
@@ -301,18 +301,20 @@ ok($t == 3, "CALL method actually called var");
 print "### scalar vmethods ##################################################\n";
 
 process_ok("[% n.0 %]" => '7', {n => 7}) if ! $is_tt;
+process_ok("[% n.abs %]" => '7', {n => 7}) if ! $is_tt;
+process_ok("[% n.abs %]" => '7', {n => -7}) if ! $is_tt;
+process_ok("[% n.atan2.substr(0, 6) %]" => '1.5707', {n => 7}) if ! $is_tt;
+process_ok("[% (4 * n.atan2(1)).substr(0, 7) %]" => '3.14159', {n => 1}) if ! $is_tt;
 process_ok("[% n.chunk(3).join %]" => 'abc def g', {n => 'abcdefg'});
 process_ok("[% n.chunk(-3).join %]" => 'a bcd efg', {n => 'abcdefg'});
 process_ok("[% n|collapse %]" => "a b", {n => '  a  b  '}); # TT2 filter
+process_ok("[% n.cos.substr(0,5) %]" => "1", {n => 0}) if ! $is_tt;
+process_ok("[% n.cos.substr(0,5) %]" => "0.707", {n => atan2(1,1)}) if ! $is_tt;
 process_ok("[% n.defined %]" => "1", {n => ''});
 process_ok("[% n.defined %]" => "", {n => undef});
 process_ok("[% n.defined %]" => "1", {n => '1'});
-process_ok("[% n|indent %]" => "    a\n    b", {n => "a\nb"}); # TT2 filter
-process_ok("[% n|indent(2) %]" => "  a\n  b", {n => "a\nb"}); # TT2 filter
-process_ok("[% n|indent('wow ') %]" => "wow a\nwow b", {n => "a\nb"}); # TT2 filter
-process_ok("[% n.int %]" => "123", {n => "123.234"}) if ! $is_tt;
-process_ok("[% n.int %]" => "123", {n => "123gggg"}) if ! $is_tt;
-process_ok("[% n.int %]" => "0", {n => "ff123.234"}) if ! $is_tt;
+process_ok("[% n.exp.substr(0,5) %]" => "2.718", {n => 1}) if ! $is_tt;
+process_ok("[% n.exp.log.substr(0,5) %]" => "8", {n => 8}) if ! $is_tt;
 process_ok("[% n.fmt %]" => '7', {n => 7}) if ! $is_tt;
 process_ok("[% n.fmt('%02d') %]" => '07', {n => 7}) if ! $is_tt;
 process_ok("[% n.fmt('%0*d', 3) %]" => '007', {n => 7}) if ! $is_tt;
@@ -321,11 +323,20 @@ process_ok("[% n|format('%02d') %]" => '07', {n => 7}); # TT2 filter
 process_ok("[% n|format('%0*d', 3) %]" => '007', {n => 7}) if ! $is_tt;
 process_ok("[% n|format('(%s)') %]" => "(a)\n(b)", {n => "a\nb"}); # TT2 filter
 process_ok("[% n.hash.items.1 %]" => "b", {n => {a => "b"}});
+process_ok("[% n.hex %]" => "255", {n => "FF"}) if ! $is_tt;
 process_ok("[% n|html %]" => "&amp;", {n => '&'}); # TT2 filter
+process_ok("[% n|indent %]" => "    a\n    b", {n => "a\nb"}); # TT2 filter
+process_ok("[% n|indent(2) %]" => "  a\n  b", {n => "a\nb"}); # TT2 filter
+process_ok("[% n|indent('wow ') %]" => "wow a\nwow b", {n => "a\nb"}); # TT2 filter
+process_ok("[% n.int %]" => "123", {n => "123.234"}) if ! $is_tt;
+process_ok("[% n.int %]" => "123", {n => "123gggg"}) if ! $is_tt;
+process_ok("[% n.int %]" => "0", {n => "ff123.234"}) if ! $is_tt;
 process_ok("[% n.item %]" => '7', {n => 7});
+process_ok("[% n.lc %]" => 'abc', {n => "ABC"}) if ! $is_tt;
 process_ok("[% n|lcfirst %]" => 'fOO', {n => "FOO"}); # TT2 filter
 process_ok("[% n.length %]" => 3, {n => "abc"});
 process_ok("[% n.list.0 %]" => 'abc', {n => "abc"});
+process_ok("[% n.log.substr(0,5) %]" => "4.605", {n => 100}) if ! $is_tt;
 process_ok("[% n|lower %]" => 'abc', {n => "ABC"}); # TT2 filter
 process_ok("[% n.match('foo').join %]" => '', {n => "bar"});
 process_ok("[% n.match('foo').join %]" => '1', {n => "foo"});
@@ -334,6 +345,7 @@ process_ok("[% n.match('(foo)').join %]" => 'foo', {n => "foo"});
 process_ok("[% n.match('(foo)').join %]" => 'foo', {n => "foofoo"});
 process_ok("[% n.match('(foo)',1).join %]" => 'foo foo', {n => "foofoo"});
 process_ok("[% n.null %]" => '', {n => "abc"});
+process_ok("[% n.oct %]" => "255", {n => "377"}) if ! $is_tt;
 process_ok("[% n.rand %]" => qr{^\d+\.\d+}, {n => "2"}) if ! $is_tt;
 process_ok("[% n.rand %]" => qr{^\d+\.\d+}, {n => "ab"}) if ! $is_tt;
 process_ok("[% n.remove('bc') %]" => "a", {n => "abc"});
@@ -348,6 +360,8 @@ process_ok("[% n.replace('(foo)', 'bar\$1') %]" => 'barfoobarfoo', {n => 'foofoo
 process_ok("[% n.replace('foo', 'bar', 0) %]" => 'barfoo', {n => 'foofoo'}) if ! $is_tt;
 process_ok("[% n.search('foo') %]" => '', {n => "bar"});
 process_ok("[% n.search('foo') %]" => '1', {n => "foo"});
+process_ok("[% n.sin.substr(0,5) %]" => "0", {n => 0}) if ! $is_tt;
+process_ok("[% n.sin.substr(0,5) %]" => "1", {n => 2*atan2(1,1)}) if ! $is_tt;
 process_ok("[% n.size %]" => '1', {n => "foo"});
 process_ok("[% n.split.join('|') %]" => "abc", {n => "abc"});
 process_ok("[% n.split.join('|') %]" => "a|b|c", {n => "a b c"});
@@ -356,8 +370,13 @@ process_ok("[% n.split(u,2).join('|') %]" => "a|b c", {n => "a b c", u => undef}
 process_ok("[% n.split(u,2).join('|') %]" => "a| b c", {n => "a b c", u => undef}) if $is_tt;
 process_ok("[% n.split('/').join('|') %]" => "a|b|c", {n => "a/b/c"});
 process_ok("[% n.split('/', 2).join('|') %]" => "a|b/c", {n => "a/b/c"});
+process_ok("[% n.sprintf(7) %]" => '7', {n => '%d'}) if ! $is_tt;
+process_ok("[% n.sprintf(3, 7, 12) %]" => '007 12', {n => '%0*d %d'}) if ! $is_tt;
+process_ok("[% n.sqrt %]" => "3", {n => 9}) if ! $is_tt;
+process_ok("[% n.srand; 12 %]" => "12", {n => 9}) if ! $is_tt;
 process_ok("[% n.stderr %]" => "", {n => "# testing stderr ... ok\r"});
 process_ok("[% n|trim %]" => "a  b", {n => '  a  b  '}); # TT2 filter
+process_ok("[% n.uc %]" => 'FOO', {n => "foo"}) if ! $is_tt; # TT2 filter
 process_ok("[% n|ucfirst %]" => 'Foo', {n => "foo"}); # TT2 filter
 process_ok("[% n|upper %]" => 'FOO', {n => "foo"}); # TT2 filter
 process_ok("[% n|uri %]" => 'a%20b', {n => "a b"}); # TT2 filter
@@ -451,6 +470,16 @@ process_ok("[% h.pairs.0.items.sort.join %]" => "1 a key value", {h => {a => 1, 
 process_ok("[% h.size %]" => "2", {h => {a => 1, b=> 2}});
 process_ok("[% h.sort.join %]" => "b a", {h => {a => "BBB", b => "A"}});
 process_ok("[% h.values.sort.join %]" => "1 2", {h => {a => 1, b=> 2}});
+
+###----------------------------------------------------------------###
+print "### vmethods as functions ############################################\n";
+
+process_ok("[% sprintf('%d %d', 7, 8) %] d" => '7 8 d') if ! $is_tt;
+process_ok("[% sprintf('%d %d', 7, 8) %] d" => '7 8 d', {tt_config => [VMETHOD_FUNCTIONS => 1]}) if ! $is_tt;
+process_ok("[% sprintf('%d %d', 7, 8) %] d" => ' d', {tt_config => [VMETHOD_FUNCTIONS => 0]}) if ! $is_tt;
+process_ok("[% int(2.234) %]" => '2') if ! $is_tt;
+
+process_ok("[% int(2.234) ; int = 44; int(2.234) ; SET int; int(2.234) %]" => '2442') if ! $is_tt; # hide and unhide
 
 ###----------------------------------------------------------------###
 print "### more virtual methods / filters ###################################\n";
@@ -557,6 +586,17 @@ print "### string operators #################################################\n"
 process_ok('[% a = "foo"; a _ "bar" %]' => 'foobar');
 process_ok('[% a = "foo"; a ~ "bar" %]' => 'foobar') if ! $is_tt;
 process_ok('[% a = "foo"; a ~= "bar"; a %]' => 'foobar') if ! $is_tt;
+process_ok('[% "b" gt "c" %]<<<' => '<<<') if ! $is_tt;
+process_ok('[% "b" gt "a" %]<<<' => '1<<<') if ! $is_tt;
+process_ok('[% "b" ge "c" %]<<<' => '<<<') if ! $is_tt;
+process_ok('[% "b" ge "b" %]<<<' => '1<<<') if ! $is_tt;
+process_ok('[% "b" lt "c" %]<<<' => '1<<<') if ! $is_tt;
+process_ok('[% "b" lt "a" %]<<<' => '<<<') if ! $is_tt;
+process_ok('[% "b" le "a" %]<<<' => '<<<') if ! $is_tt;
+process_ok('[% "b" le "b" %]<<<' => '1<<<') if ! $is_tt;
+process_ok('[% "a" cmp "b" %]<<<' => '-1<<<') if ! $is_tt;
+process_ok('[% "b" cmp "b" %]<<<' => '0<<<') if ! $is_tt;
+process_ok('[% "c" cmp "b" %]<<<' => '1<<<') if ! $is_tt;
 
 ###----------------------------------------------------------------###
 print "### math operators ###################################################\n";
@@ -606,6 +646,18 @@ process_ok('[% a = 1 %][% --a %][% a %]' => '00') if ! $is_tt;
 process_ok('[% a = 1 %][% a-- %][% a %]' => '10') if ! $is_tt;
 process_ok('[% a++ FOR [1..3] %]' => '012') if ! $is_tt;
 process_ok('[% --a FOR [1..3] %]' => '-1-2-3') if ! $is_tt;
+
+process_ok('[% 2 >  3 %]<<<' => '<<<');
+process_ok('[% 2 >  1 %]<<<' => '1<<<');
+process_ok('[% 2 >= 3 %]<<<' => '<<<');
+process_ok('[% 2 >= 2 %]<<<' => '1<<<');
+process_ok('[% 2 < 3 %]<<<' => '1<<<');
+process_ok('[% 2 < 1 %]<<<' => '<<<');
+process_ok('[% 2 <= 1 %]<<<' => '<<<');
+process_ok('[% 2 <= 2 %]<<<' => '1<<<');
+process_ok('[% 1 <=> 2 %]<<<' => '-1<<<') if ! $is_tt;
+process_ok('[% 2 <=> 2 %]<<<' => '0<<<') if ! $is_tt;
+process_ok('[% 3 <=> 2 %]<<<' => '1<<<') if ! $is_tt;
 
 ###----------------------------------------------------------------###
 print "### boolean operators ################################################\n";
@@ -1182,8 +1234,8 @@ local $ENV{'REQUEST_METHOD'} = 1;
 process_ok("[% p = DUMP a; p.collapse %]" => '<pre>a = &apos;s&apos;; </pre>', {a => "s", tt_config => [DUMP => {header => 0}]});
 process_ok("[% p = DUMP a; p.collapse %]" => 'a = \'s\';', {a => "s", tt_config => [DUMP => {header => 0, html => 0}]});
 local $ENV{'REQUEST_METHOD'} = 0;
-process_ok("[% SET global; p = DUMP; p.collapse %]" => "DUMP: File \"input text\" line 1 EntireStash = { 'a' => 'b', 'global' => '' };", {a => 'b', tt_config => [DUMP => {Sortkeys => 1}]});
-process_ok("[% SET global; p = DUMP; p.collapse %]" => "DUMP: File \"input text\" line 1 EntireStash = { 'a' => 'b', 'global' => '' };", {a => 'b', tt_config => [DUMP => {Sortkeys => 1, EntireStash => 1}]});
+process_ok("[% SET global; p = DUMP; p.collapse %]" => "DUMP: File \"input text\" line 1 EntireStash = { 'a' => 'b', 'global' => undef };", {a => 'b', tt_config => [DUMP => {Sortkeys => 1}]});
+process_ok("[% SET global; p = DUMP; p.collapse %]" => "DUMP: File \"input text\" line 1 EntireStash = { 'a' => 'b', 'global' => undef };", {a => 'b', tt_config => [DUMP => {Sortkeys => 1, EntireStash => 1}]});
 process_ok("[% SET global; p = DUMP; p.collapse %]" => "DUMP: File \"input text\" line 1", {a => 'b', tt_config => [DUMP => {Sortkeys => 1, EntireStash => 0}]});
 }
 
@@ -1206,6 +1258,7 @@ process_ok("[% CONFIG ANYCASE %]|[% CONFIG ANYCASE => 1 %][% CONFIG ANYCASE %]" 
 
 process_ok("[% CONFIG DUMP    %]|[% CONFIG DUMP    => 0 %][% DUMP           %]bar" => 'CONFIG DUMP = undef|bar');
 process_ok("[% CONFIG DUMP => {Useqq=>1, header=>0, html=>0} %][% DUMP 'foo' %]" => "'foo' = \"foo\";\n");
+process_ok("[% CONFIG VMETHOD_FUNCTIONS => 0 %][% sprintf('%d %d', 7, 8) %] d" => ' d');
 }
 
 ###----------------------------------------------------------------###
