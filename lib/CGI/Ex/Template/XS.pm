@@ -2,26 +2,18 @@ package CGI::Ex::Template::XS;
 
 =head1 NAME
 
-CGI::Ex::Template::XS - XS version of key parts of CGI::Ex::Template
+CGI::Ex::Template::XS - DEPRECATED - you should now use Template::Alloy::XS
 
 =cut
 
 use strict;
 use warnings;
-use XSLoader;
-use v5.8.0;
-use CGI::Ex::Template 2.13;
-use base qw(CGI::Ex::Template);
+use Template::Alloy::XS 1.002;
+use CGI::Ex::Template 2.14;
 
-our $VERSION = '0.03';
-XSLoader::load('CGI::Ex::Template::XS', $VERSION);
+use base qw(Template::Alloy::XS);
 
-### method used for debugging XS
-sub __dump_any {
-    my ($self, $data) = @_;
-    require CGI::Ex::Dump;
-    CGI::Ex::Dump::debug($data);
-}
+our $VERSION = '0.05';
 
 1;
 
@@ -34,40 +26,20 @@ __END__
 
     my $obj = CGI::Ex::Template::XS->new;
 
-    # see the CGI::Ex::Template documentation
+    # see the Template::Alloy::XS and Template::Alloy documentation
 
 =head1 DESCRIPTION
 
-This is an attempt to get XS speeds for the CGI::Ex::Template functionality.
+This module was the precursor to Template::Alloy::XS.  CGI::Ex::Template::XS
+is now deprecated in favor of using Template::Alloy::XS.  No further work
+will be done on the CGI::Ex::Template::XS line - all work will go into the
+Template::Alloy line.
 
-All of the methods of CGI::Ex::Template are available.  All configuration
-parameters, and all output should be the same.  You should be able
-to use this package directly in place of CGI::Ex::Template.
-
-=head1 BUGS/TODO
-
-=over 4
-
-=item Memory leak
-
-The use of FILTER aliases causes a memory leak in a cached environment.
-The following is an example of a construct that can cause the leak.
-
-  [% n=1; n FILTER echo=repeat(2); n FILTER echo %]
-
-Anybody with input or insight into fixing the code is welcome to submit
-a patch :).
-
-=item undefined_any
-
-The XS version doesn't call undefined_any when play_expr finds an
-undefined value.  It needs to.
-
-=back
+All code should work as before.
 
 =head1 AUTHOR
 
-Paul Seamons, E<lt>paul@seamons.comE<gt>
+Paul Seamons <perl at seamons dot com>
 
 =head1 LICENSE
 
