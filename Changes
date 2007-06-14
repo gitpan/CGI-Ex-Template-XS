@@ -1,5 +1,9 @@
 Revision history for Perl extension CGI::Ex::Template::XS.
 
+0.06
+      Jun 14 2007
+        - Correct dependency in Makefile.PL
+
 0.05
       Jun 12 2007
         - Deprecate the module in favor of using Template::Alloy::XS

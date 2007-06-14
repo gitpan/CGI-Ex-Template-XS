@@ -12,8 +12,8 @@ WriteMakefile(
               VERSION_FROM  => "lib/CGI/Ex/Template/XS.pm",
               INSTALLDIRS   => 'site',
               PREREQ_PM     => {
-                  'CGI::Ex'         => '2.14',
-                  'Template::Alloy' => '1.002',
+                  'CGI::Ex'             => '2.14',
+                  'Template::Alloy::XS' => '1.002',
               },
               
               dist          => {

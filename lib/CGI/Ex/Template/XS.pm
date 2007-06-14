@@ -8,12 +8,12 @@ CGI::Ex::Template::XS - DEPRECATED - you should now use Template::Alloy::XS
 
 use strict;
 use warnings;
+use base qw(Template::Alloy::XS);
+
 use Template::Alloy::XS 1.002;
 use CGI::Ex::Template 2.14;
 
-use base qw(Template::Alloy::XS);
-
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 1;
 
